@@ -1,7 +1,7 @@
 from flask import Flask, request, redirect, Response, render_template#, send_file
 app = Flask(__name__)
 
-@app.route("/",methods=["GET","POST"])
+@app.route("/",methods=["GET","POST"]#this is the mainpage
 def main_page():
     return render_template("hello.html")
 
