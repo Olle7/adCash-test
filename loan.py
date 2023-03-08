@@ -3,6 +3,16 @@ from time import time
 from sqlite3 import connect
 app = Flask(__name__)
 
+def get_all_arguments(request):
+    args={}
+    for key in request.form.keys():
+        args[key]=request.form[key]
+    for key in request.args.keys():
+        if key in args:
+            raise Exception("same parameter 2 times.")
+        args[key]=request.args[key]
+    return args
+
 def denie_beacuase_of_too_many_applications(personal_ID):
     return False
 def denie_beacuase_blacklisted(personal_ID):
@@ -19,7 +29,8 @@ def main_page():
 
 @app.route("/response_to_application",methods=["GET","POST"])
 def response_to_application():
-    args_of_request={**dict(request.args),**dict(request.form)}
+    args_of_request=get_all_arguments(request)
+    print("args:",args_of_request)
     add_loan_application_to_database(args_of_request["amount"],args_of_request["currency"], args_of_request["term"],args_of_request["name"], args_of_request["personal_ID"],args_of_request["contact"],args_of_request["type_of_contact"],args_of_request["comment"])
     if denie_beacuase_of_too_many_applications(args_of_request["personal_ID"]):
         return render_template("application deinied because too many applications.html")
