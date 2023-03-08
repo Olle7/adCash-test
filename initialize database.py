@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS loan_database (
     type_of_contact TEXT,
     comment TEXT,
     time_of_recieving_application INTEGER
-    
 );
 ''')
 conn.execute("""

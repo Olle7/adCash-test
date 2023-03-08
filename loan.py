@@ -3,6 +3,8 @@ from time import time
 from sqlite3 import connect
 app = Flask(__name__)
 
+MAX_APPLICATIONS_IN_24_H=10
+
 def get_all_arguments(request):
     args={}
     for key in request.form.keys():
@@ -14,7 +16,16 @@ def get_all_arguments(request):
     return args
 
 def denie_beacuase_of_too_many_applications(personal_ID):
-    return False
+    conn = connect('loan_applications.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM loan_database WHERE personal_id = ? AND time_of_recieving_application > ?;", (personal_ID,time()-60*60*24))
+    rows = cursor.fetchall()
+    count = len(rows)
+    conn.close()
+    print("number of applications in last 60 seconds:", count)
+    return count > MAX_APPLICATIONS_IN_24_H
+
+
 def denie_beacuase_blacklisted(personal_ID):
     conn = connect('loan_applications.db')
     cursor = conn.cursor()
@@ -30,12 +41,12 @@ def main_page():
 @app.route("/response_to_application",methods=["GET","POST"])
 def response_to_application():
     args_of_request=get_all_arguments(request)
-    print("args:",args_of_request)
-    add_loan_application_to_database(args_of_request["amount"],args_of_request["currency"], args_of_request["term"],args_of_request["name"], args_of_request["personal_ID"],args_of_request["contact"],args_of_request["type_of_contact"],args_of_request["comment"])
+    #print("args:",args_of_request)
     if denie_beacuase_of_too_many_applications(args_of_request["personal_ID"]):
         return render_template("application deinied because too many applications.html")
     if denie_beacuase_blacklisted(args_of_request["personal_ID"]):
         return render_template("application denied because blacklisted.html")
+    add_loan_application_to_database(args_of_request["amount"],args_of_request["currency"], args_of_request["term"],args_of_request["name"], args_of_request["personal_ID"],args_of_request["contact"],args_of_request["type_of_contact"],args_of_request["comment"])
     return render_template("Application recieved.html")
 
 @app.route("/apply_for_a_loan",methods=["GET","POST"])
