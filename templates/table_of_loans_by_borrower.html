@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Table of books</title>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+    </style>
+
+    <style>
+        .context-menu {
+            position: absolute;
+            z-index: 1000;
+            width: 120px;
+            background-color: #fff;
+            border: 1px solid #888;
+            box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
+            padding: 4px 0;
+            list-style: none;
+        }
+
+        .context-menu li {
+            padding: 4px 12px;
+            cursor: pointer;
+        }
+
+        .context-menu li:hover {
+            background-color: #ddd;
+        }
+
+        .context-menu li.disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+    </style>
+
+
+</head>
+<body>
+<h1>Table of books</h1>
+<div>
+    <label for="paginationCheckbox">Paginate the table:</label>
+    <input type="checkbox" id="paginationCheckbox" onchange="display_table()" />
+    &nbsp;
+    <label for="pageInput">Page number:</label>
+    <input type="number" id="pageInput" value="0" min="0" onchange="display_table()" />
+    &nbsp;
+    <label for="booksPerPageInput">Books per page:</label>
+    <input type="number" id="booksPerPageInput" value="20" min="1" onchange="display_table()" />
+</div>
+
+<div>
+    <label for="borrowedCheckbox">Show borrowed books:</label>
+    <input type="checkbox" id="borrowedCheckbox" onchange="display_table()" checked>
+    <label for="availableCheckbox">Show available books:</label>
+    <input type="checkbox" id="availableCheckbox" onchange="display_table()" checked>
+</div>
+
+<div>
+    <label for="searchInput">Search:</label>
+    <input type="text" id="searchInput" oninput="display_table()" />
+</div>
+
+
+<table id="booksTable">
+    <thead>
+    <tr>
+        <th onclick="sort('author')">author</th>
+        <th onclick="sort('title')">title</th>
+        <th onclick="sort('year')">time of publication</th>
+        <th onclick="sort('status')">status</th>
+        <th onclick="sort('dueDate')">due date</th>
+        <th onclick="sort('id')">ID</th>
+        <th onclick="sort('added')">added</th>
+        <th onclick="sort('checkOutCount')">check Out Count</th>
+        <th onclick="sort('genre')">genre</th>
+        <th onclick="sort('comment')">comment</th>
+    </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+<script>
+    // Define the URL to fetch JSON data from
+    const url = "http://localhost:8080/api/book/getBooks";
+
+    // Use the fetch function to download the JSON data
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            list_of_books=data;
+            // Get a reference to the table body element
+            display_table()
+
+        })
+        .catch(error => console.error(error));
+
+    function display_table(){
+        if(document.getElementById("paginationCheckbox").checked){
+            page_nr=parseInt(document.getElementById("pageInput").value);
+            books_on_page=parseInt(document.getElementById("booksPerPageInput").value);
+            fill_table(books_on_page*page_nr,books_on_page*(page_nr+1));
+        }
+        else{
+            fill_table(0,Infinity);}
+    }
+
+    function freeCriteriaFilter(book,searchQuery){
+        console.log(searchQuery);
+        let matchesSearchQuery = false;
+        if (searchQuery !== '') {
+            const fieldsToSearch = ['author', 'title', 'year', 'status', 'dueDate', 'id', 'added', 'checkOutCount', 'genre', 'comment'];
+            for (let j = 0; j < fieldsToSearch.length; j++) {
+                const fieldValue = book[fieldsToSearch[j]];
+                if (typeof fieldValue === 'string' && fieldValue.toLowerCase().includes(searchQuery)) {
+                    matchesSearchQuery = true;
+                    break;
+                }
+            }
+        } else {
+            matchesSearchQuery = true;
+        }
+        return matchesSearchQuery;
+    }
+    const tableBody = document.querySelector('#booksTable tbody');
+    function fill_table(first_book,last_book){
+
+        for(var i=0;i<tableBody.rows.length;){
+            tableBody.deleteRow(i);}
+
+        let showBorrowed = document.querySelector('#borrowedCheckbox').checked;
+        let showAvailable = document.querySelector('#availableCheckbox').checked;
+
+        max_i= last_book<list_of_books.length ? last_book:list_of_books.length;
+
+        // Loop through the JSON data and create table rows
+        for (let i = first_book; i <max_i; i++) {
+            book=list_of_books[i]
+            if (!showAvailable&&book.status==="AVAILABLE"){
+                continue}
+            if (!showBorrowed&&book.status==="BORROWED"){
+                continue}
+
+            searchedString=document.getElementById("searchInput").value;
+            if (!freeCriteriaFilter(book,searchedString)){
+                continue
+            }
+
+            const row = tableBody.insertRow();
+
+            const authorCell = row.insertCell();
+            const titleCell = row.insertCell();
+            const pubDateCell = row.insertCell();
+            const statusCell = row.insertCell();
+            const dueDateCell = row.insertCell();
+            const idCell = row.insertCell();
+            const addedCell = row.insertCell();
+            const checkOutCountCell = row.insertCell();
+            const genreCell = row.insertCell();
+            const commentCell = row.insertCell();
+
+            const editDeleteCell = row.insertCell();
+            editDeleteCell.innerHTML = `<button onclick="delete_book(${book.id})">Delete</button>`;
+
+            const CheckoutCell = row.insertCell();
+            CheckoutCell.innerHTML = `<button onclick="checkout_book(${book.id})">checkout</button>`;
+
+            authorCell.innerText = book.author;
+            titleCell.innerText = book.title;
+            pubDateCell.innerText = book.year;
+            statusCell.innerText = book.status;
+            idCell.innerText = book.id;
+            addedCell.innerText = book.added.dayOfMonth + "/" + book.added.monthValue + "/" + book.added.year;
+            checkOutCountCell.innerText = book.checkOutCount;
+            genreCell.innerText = book.genre;
+            commentCell.innerText = book.comment;
+
+            // Check if the dueDate is null
+            if (book.dueDate == null) {
+                dueDateCell.innerText = "N/A";
+            } else {
+                dueDateCell.innerText = book.dueDate.dayOfMonth + "/" + book.dueDate.monthValue + "/" + book.dueDate.year;
+            }
+        };
+    }
+    sorting_order=["author","title","year","status","dueDate","id","added","checkOutCount","genre",];
+    sort_order = { author: 1, title: 1, year: 1, status: 1, dueDate: 1, id: 1, added: 1, checkOutCount: 1, genre: 1 };
+
+    function sort(column) {
+        // Check the current sorting order for this column
+        const order = sort_order[column];
+
+        // Remove the column from the sorting order, if it's already there
+        sorting_order = sorting_order. filter(item => item !== column);
+
+        // Add the column to the end of the sorting order
+        sorting_order.push(column);
+
+
+        // Update the sorting order for this column
+        sort_order[column] = (sorting_order[sorting_order.length-1] === column) ? -1 * sort_order[column] : 1;
+        console.log(sorting_order[sorting_order.length-1],column)
+        console.log(sorting_order);
+        console.log(sort_order);
+
+        // Sort the list of books using the sorting order
+        list_of_books.sort((a, b) => {
+            for (let i = sorting_order.length - 1; i >= 0; i--) {
+                const key = sorting_order[i];
+                const order = sort_order[sorting_order[i]];
+
+                // Handle sorting by "added" or "dueDate" columns
+                let aValue = a[key];
+                let bValue = b[key];
+                if (key === "added" || key === "dueDate") {
+                    if (aValue === null) {
+                        aValue = 0;
+                    } else {
+                        aValue = new Date(a[key].year, a[key].monthValue - 1, a[key].dayOfMonth);
+                    }
+                    if (bValue === null) {
+                        bValue = 0;
+                    } else {
+                        bValue = new Date(b[key].year, b[key].monthValue - 1, b[key].dayOfMonth);
+                    }
+                }
+
+                const diff = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+
+                if (diff !== 0) {
+                    // Sort in the current order if it's ascending (1), and in the opposite order if it's descending (-1)
+                    return order === 1 ? diff : -diff;
+                }
+            }
+            return 0;
+        });
+
+        // Update the table with the sorted data
+        display_table();
+    }
+
+
+</script>
+
+</body>
+</html>
