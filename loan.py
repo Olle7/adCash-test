@@ -81,11 +81,18 @@ def table_of_loans_by_borrower():
         pass
     else:
         pass
-    return render_template("table_of_floans_by_borrower.html")
+    return render_template("table_of_loans_by_borrower.html")
 
 @app.route("/list_of_loans_by_borrower",methods=["GET","POST"])
 def list_of_loans_by_borrower():
     args_of_request=get_all_arguments(request)
+    conn=connect('loan_applications.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM loan_database WHERE personal_id = ?", (args_of_request["personal_ID"],))
+    rows = c.fetchall()
+    conn.close()
+    print(type(rows))
+    return rows
 
 
 
