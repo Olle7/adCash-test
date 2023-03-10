@@ -10,7 +10,7 @@ def get_all_arguments(request):
     for key in request.form.keys():
         args[key]=request.form[key]
     for key in request.args.keys():
-        if key in args:
+        if key in args and request.form[key]!=request.args[key]:
             raise Exception("same parameter 2 times.")
         args[key]=request.args[key]
     return args
@@ -89,9 +89,11 @@ def list_of_loans_by_borrower():
     conn=connect('loan_applications.db')
     c = conn.cursor()
     c.execute("SELECT * FROM loan_database WHERE personal_id = ?", (args_of_request["personal_ID"],))
-    rows = c.fetchall()
+    print(c,type(c))
+    rows = []
+    for row in c:
+        rows+=row
     conn.close()
-    print(type(rows))
     return rows
 
 
