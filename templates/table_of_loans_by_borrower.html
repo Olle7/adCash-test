@@ -55,15 +55,15 @@
 <table id="Table_of_loans">
     <thead>
     <tr>
-        <th>amount</th>
-        <th>currency</th>
-        <th>term</th>
-        <th>name</th>
-        <th>persoal ID</th>
-        <th>contact</th>
-        <th>type of contact</th>
-        <th>Comments</th>
-        <th>time of application</th>
+        <th onclick="sort(0)">amount</th>
+        <th onclick="sort(1)">currency</th>
+        <th onclick="sort(2)">term</th>
+        <th onclick="sort(3)">name</th>
+        <th onclick="sort(4)">persoal ID</th>
+        <th onclick="sort(5)">contact</th>
+        <th onclick="sort(6)">type of contact</th>
+        <th onclick="sort(7)">Comments</th>
+        <th onclick="sort(8)">time of application</th>
     </tr>
     </thead>
     <tbody>
@@ -116,6 +116,46 @@ function load_data() {
       fill_table();
     })
     .catch(error => console.error(error));
+}
+
+sort_order=[0,1,2,3,4,5,6,7,8]
+sorting_order=[1,1,1,1,1,1,1,1,1]
+function sort(column_nr) {
+  const order = sort_order[column_nr];
+
+  // Remove the column_nr from the sorting order, if it's already there
+  sorting_order = sorting_order.filter(item => item !== column_nr);
+
+  // Add the column_nr to the end of the sorting order
+  sorting_order.push(column_nr);
+
+  // Update the sorting order for this column_nr
+  sort_order[column_nr] =
+    sorting_order[sorting_order.length - 1] === column_nr
+      ? -1 * sort_order[column_nr]
+      : 1;
+
+  // Sort the list of books using the sorting order
+  list_with_loans.sort((a, b) => {
+    for (let i = sorting_order.length - 1; i >= 0; i--) {
+      const key = sorting_order[i];
+      const order = sort_order[sorting_order[i]];
+
+      let aValue = a[key];
+      let bValue = b[key];
+
+      const diff = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+
+      if (diff !== 0) {
+        // Sort in the current order if it's ascending (1), and in the opposite order if it's descending (-1)
+        return order === 1 ? diff : -diff;
+      }
+    }
+    return 0;
+  });
+
+  // Update the table with the sorted data
+  fill_table();
 }
 </script>
 
