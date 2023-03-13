@@ -1,7 +1,7 @@
 import sqlite3
 
 # Connect to the database (create a new database if it doesn't exist)
-conn = sqlite3.connect('loan_applications.db')
+conn = sqlite3.connect('../loan_applications.db')
 
 # Create a new table for loan applications
 

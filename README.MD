@@ -1,0 +1,1 @@
+tHIS IS SOLUTION FOR Adcash test.
